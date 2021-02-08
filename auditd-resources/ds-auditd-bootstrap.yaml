@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: auditd-bootstrap
+  labels:
+    app: auditd-bootstrap
+spec:
+  selector:
+    matchLabels:
+      app: auditd-bootstrap
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        name: auditd-bootstrap
+        app: auditd-bootstrap
+    spec:
+      volumes:
+        - name: root-mount
+          hostPath:
+            path: /
+        - name: auditd-rules
+          configMap:
+            name: auditd-rules
+            defaultMode: 0644
+      initContainers:
+        - image: busybox:1.32.1
+          name: auditd-bootstrap
+          command:
+            - "sh"
+            - "-c"
+            - "cp /bootstrap/auditd.rules /etc/audit/audit.rules"
+          env:
+            - name: ROOT_MOUNT_DIR
+              value: /root
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: root-mount
+              mountPath: /root
+            - name: auditd-rules
+              mountPath: /bootstrap
+      containers:
+        - image: "gcr.io/google-containers/pause:2.0"
+          name: pause
