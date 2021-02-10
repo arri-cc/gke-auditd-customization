@@ -45,7 +45,9 @@ spec:
           command:
             - sh
             - -c
-            - "cp /rules/audit.rules /host/etc/audit/audit.rules"
+            - |
+              cp /rules/audit.rules /host/etc/audit/audit.rules \
+              && chroot /host
           securityContext:
             privileged: true
           volumeMounts:
