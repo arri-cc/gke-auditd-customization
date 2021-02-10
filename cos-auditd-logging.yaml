@@ -9,7 +9,7 @@ metadata:
   name: auditd-logging
   namespace: auditd-logging
   annotations:
-    kubernetes.io/description: 'DaemonSet that enables Linux auditd logging with custom rules on COS nodes'
+    kubernetes.io/description: "DaemonSet that enables Linux auditd logging with custom rules on COS nodes"
 spec:
   selector:
     matchLabels:
@@ -26,87 +26,88 @@ spec:
       nodeSelector:
         cloud.google.com/gke-os-distribution: cos
       volumes:
-      - hostPath:
-          path: /
-        name: host
-      - hostPath:
-          path: /var/log
-        name: varlog
-      - hostPath:
-          path: /usr/lib64
-        name: libsystemddir
-      - configMap:
-          defaultMode: 420
-          name: fluentd-gcp-config-cos-auditd
-        name: config-volume
-      initContainers:
-      - name: cos-auditd-setup
-        image: ubuntu
-          #command: ["chroot", "/host", "systemctl", "start", "cloud-audit-setup"]
-        securityContext:
-          privileged: true
-        volumeMounts:
-        - name: host
-          mountPath: /host
-        resources:
-          requests:
-            memory: "10Mi"
-            cpu: "10m"
-      containers:
-      - name: fluentd-gcp-cos-auditd
-        env:
-        - name: NODE_NAME
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: spec.nodeName
-        image: gcr.io/stackdriver-agents/stackdriver-logging-agent:0.6-1.6.0-1
-        imagePullPolicy: IfNotPresent
-        livenessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -c
-            - |
-              LIVENESS_THRESHOLD_SECONDS=${LIVENESS_THRESHOLD_SECONDS:-300}; STUCK_THRESHOLD_SECONDS=${LIVENESS_THRESHOLD_SECONDS:-900}; if [ ! -e /var/log/fluentd-buffers ]; then
-                exit 1;
-              fi; touch -d "${STUCK_THRESHOLD_SECONDS} seconds ago" /tmp/marker-stuck; if [[ -z "$(find /var/log/fluentd-buffers -type f -newer /tmp/marker-stuck -print -quit)" ]]; then
-                rm -rf /var/log/fluentd-buffers;
-                exit 1;
-              fi; touch -d "${LIVENESS_THRESHOLD_SECONDS} seconds ago" /tmp/marker-liveness; if [[ -z "$(find /var/log/fluentd-buffers -type f -newer /tmp/marker-liveness -print -quit)" ]]; then
-                exit 1;
-              fi;
-          failureThreshold: 3
-          initialDelaySeconds: 600
-          periodSeconds: 60
-          successThreshold: 1
-          timeoutSeconds: 1
-        resources:
-          limits:
-            cpu: "1"
-            memory: 500Mi
-          requests:
-            cpu: 100m
-            memory: 200Mi
-        terminationMessagePath: /dev/termination-log
-        terminationMessagePolicy: File
-        volumeMounts:
-        - mountPath: /var/log
+        - hostPath:
+            path: /
+          name: host
+        - hostPath:
+            path: /var/log
           name: varlog
-        - mountPath: /host/lib
+        - hostPath:
+            path: /usr/lib64
           name: libsystemddir
-          readOnly: true
-        - mountPath: /etc/google-fluentd/google-fluentd.conf
-          subPath: google-fluentd.conf
+        - configMap:
+            defaultMode: 420
+            name: fluentd-gcp-config-cos-auditd
           name: config-volume
+      initContainers:
+        - name: cos-auditd-setup
+          image:
+            ubuntu
+            #command: ["chroot", "/host", "systemctl", "start", "cloud-audit-setup"]
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: host
+              mountPath: /host
+          resources:
+            requests:
+              memory: "10Mi"
+              cpu: "10m"
+      containers:
+        - name: fluentd-gcp-cos-auditd
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+          image: gcr.io/stackdriver-agents/stackdriver-logging-agent:0.6-1.6.0-1
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  LIVENESS_THRESHOLD_SECONDS=${LIVENESS_THRESHOLD_SECONDS:-300}; STUCK_THRESHOLD_SECONDS=${LIVENESS_THRESHOLD_SECONDS:-900}; if [ ! -e /var/log/fluentd-buffers ]; then
+                    exit 1;
+                  fi; touch -d "${STUCK_THRESHOLD_SECONDS} seconds ago" /tmp/marker-stuck; if [[ -z "$(find /var/log/fluentd-buffers -type f -newer /tmp/marker-stuck -print -quit)" ]]; then
+                    rm -rf /var/log/fluentd-buffers;
+                    exit 1;
+                  fi; touch -d "${LIVENESS_THRESHOLD_SECONDS} seconds ago" /tmp/marker-liveness; if [[ -z "$(find /var/log/fluentd-buffers -type f -newer /tmp/marker-liveness -print -quit)" ]]; then
+                    exit 1;
+                  fi;
+            failureThreshold: 3
+            initialDelaySeconds: 600
+            periodSeconds: 60
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              cpu: "1"
+              memory: 500Mi
+            requests:
+              cpu: 100m
+              memory: 200Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /var/log
+              name: varlog
+            - mountPath: /host/lib
+              name: libsystemddir
+              readOnly: true
+            - mountPath: /etc/google-fluentd/google-fluentd.conf
+              subPath: google-fluentd.conf
+              name: config-volume
       dnsPolicy: Default
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
       tolerations:
-      - effect: NoSchedule
-        key: node.alpha.kubernetes.io/ismaster
-      - effect: NoExecute
-        operator: Exists
+        - effect: NoSchedule
+          key: node.alpha.kubernetes.io/ismaster
+        - effect: NoExecute
+          operator: Exists
   updateStrategy:
     rollingUpdate:
       maxUnavailable: 1
@@ -118,7 +119,7 @@ metadata:
   name: fluentd-gcp-config-cos-auditd
   namespace: cos-auditd
   annotations:
-    kubernetes.io/description: 'ConfigMap for Linux auditd logging daemonset on COS nodes.'
+    kubernetes.io/description: "ConfigMap for Linux auditd logging daemonset on COS nodes."
 data:
   google-fluentd.conf: |-
     <source>

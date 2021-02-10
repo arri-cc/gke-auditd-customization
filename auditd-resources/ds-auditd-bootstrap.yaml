@@ -1,111 +1,112 @@
-
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: auditd-bootstrap
+  name: auditd-logs
   namespace: auditd-logging
   annotations:
-    kubernetes.io/description: 'DaemonSet that enables Linux auditd logging with custom rules on COS nodes'
+    kubernetes.io/description: "DaemonSet that enables Linux auditd logging with custom rules on COS nodes"
 spec:
   selector:
     matchLabels:
-      app: auditd-bootstrap
+      app: auditd-logs
   template:
     metadata:
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ""
       labels:
-        name: auditd-bootstrap
-        app: auditd-bootstrap
+        name: auditd-logs
+        app: auditd-logs
     spec:
       hostNetwork: true
       hostPID: true
       nodeSelector:
         cloud.google.com/gke-os-distribution: cos
       volumes:
-        - hostPath:
+        - name: host
+          hostPath:
             path: /
-          name: host
-        - hostPath:
+        - name: varlog
+          hostPath:
             path: /var/log
-          name: varlog
-        - hostPath:
+        - name: libsystemddir
+          hostPath:
             path: /usr/lib64
-          name: libsystemddir
-        - configMap:
+        - name: config-volume
+          configMap:
             defaultMode: 420
             name: fluentd-gcp-config-cos-auditd
-          name: config-volume
         - name: auditd-rules
           configMap:
             name: auditd-rules
             defaultMode: 0644
       initContainers:
         - image: ubuntu:18.04
-          name: auditd-bootstrap
-          command: ["chroot","/host", "/bootstrap/auditd.sh"]
-          env:
-            - name: ROOT_MOUNT_DIR
-              value: /root
+          name: bootstrap-mkdir
+          command:
+            - sh
+            - -c
+            - "cp /rules/audit.rules /host/etc/audit/audit.rules"
           securityContext:
             privileged: true
           volumeMounts:
             - name: host
               mountPath: /host
             - name: auditd-rules
-              mountPath: /bootstrap
+              mountPath: /rules
       containers:
-      - name: fluentd-gcp-cos-auditd
-        env:
-        - name: NODE_NAME
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: spec.nodeName
-        image: gcr.io/stackdriver-agents/stackdriver-logging-agent:0.6-1.6.0-1
-        imagePullPolicy: IfNotPresent
-        livenessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -c
-            - |
-              LIVENESS_THRESHOLD_SECONDS=${LIVENESS_THRESHOLD_SECONDS:-300}; STUCK_THRESHOLD_SECONDS=${LIVENESS_THRESHOLD_SECONDS:-900}; if [ ! -e /var/log/fluentd-buffers ]; then
-                exit 1;
-              fi; touch -d "${STUCK_THRESHOLD_SECONDS} seconds ago" /tmp/marker-stuck; if [[ -z "$(find /var/log/fluentd-buffers -type f -newer /tmp/marker-stuck -print -quit)" ]]; then
-                rm -rf /var/log/fluentd-buffers;
-                exit 1;
-              fi; touch -d "${LIVENESS_THRESHOLD_SECONDS} seconds ago" /tmp/marker-liveness; if [[ -z "$(find /var/log/fluentd-buffers -type f -newer /tmp/marker-liveness -print -quit)" ]]; then
-                exit 1;
-              fi;
-          failureThreshold: 3
-          initialDelaySeconds: 600
-          periodSeconds: 60
-          successThreshold: 1
-          timeoutSeconds: 1
-        resources:
-          limits:
-            cpu: "1"
-            memory: 500Mi
-          requests:
-            cpu: 100m
-            memory: 200Mi
-        terminationMessagePath: /dev/termination-log
-        terminationMessagePolicy: File
-        volumeMounts:
-        - mountPath: /var/log
-          name: varlog
-        - mountPath: /host/lib
-          name: libsystemddir
-          readOnly: true
-        - mountPath: /etc/google-fluentd/google-fluentd.conf
-          subPath: google-fluentd.conf
-          name: config-volume
+        - name: pause
+          image: "gcr.io/google-containers/pause:2.0"
+          # - name: fluentd-gcp-cos-auditd
+          #   env:
+          #     - name: NODE_NAME
+          #       valueFrom:
+          #         fieldRef:
+          #           apiVersion: v1
+          #           fieldPath: spec.nodeName
+          #   image: gcr.io/stackdriver-agents/stackdriver-logging-agent:0.6-1.6.0-1
+          #   imagePullPolicy: IfNotPresent
+          #   livenessProbe:
+          #     exec:
+          #       command:
+          #         - /bin/sh
+          #         - -c
+          #         - |
+          #           LIVENESS_THRESHOLD_SECONDS=${LIVENESS_THRESHOLD_SECONDS:-300}; STUCK_THRESHOLD_SECONDS=${LIVENESS_THRESHOLD_SECONDS:-900}; if [ ! -e /var/log/fluentd-buffers ]; then
+          #             exit 1;
+          #           fi; touch -d "${STUCK_THRESHOLD_SECONDS} seconds ago" /tmp/marker-stuck; if [[ -z "$(find /var/log/fluentd-buffers -type f -newer /tmp/marker-stuck -print -quit)" ]]; then
+          #             rm -rf /var/log/fluentd-buffers;
+          #             exit 1;
+          #           fi; touch -d "${LIVENESS_THRESHOLD_SECONDS} seconds ago" /tmp/marker-liveness; if [[ -z "$(find /var/log/fluentd-buffers -type f -newer /tmp/marker-liveness -print -quit)" ]]; then
+          #             exit 1;
+          #           fi;
+          #     failureThreshold: 3
+          #     initialDelaySeconds: 600
+          #     periodSeconds: 60
+          #     successThreshold: 1
+          #     timeoutSeconds: 1
+          #   resources:
+          #     limits:
+          #       cpu: "1"
+          #       memory: 500Mi
+          #     requests:
+          #       cpu: 100m
+          #       memory: 200Mi
+          #   terminationMessagePath: /dev/termination-log
+          #   terminationMessagePolicy: File
+          #   volumeMounts:
+          #     - mountPath: /var/log
+          #       name: varlog
+          #     - mountPath: /host/lib
+          #       name: libsystemddir
+          #       readOnly: true
+          #     - mountPath: /etc/google-fluentd/google-fluentd.conf
+          #       subPath: google-fluentd.conf
+          #       name: config-volume
       tolerations:
-      - effect: NoSchedule
-        key: node.alpha.kubernetes.io/ismaster
-      - effect: NoExecute
-        operator: Exists
+        - effect: NoSchedule
+          key: node.alpha.kubernetes.io/ismaster
+        - effect: NoExecute
+          operator: Exists
   updateStrategy:
     rollingUpdate:
       maxUnavailable: 1
