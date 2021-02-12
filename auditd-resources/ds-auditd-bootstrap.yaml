@@ -20,7 +20,8 @@ spec:
       hostNetwork: true
       hostPID: true
       nodeSelector:
-        cloud.google.com/gke-os-distribution: cos
+        #cloud.google.com/gke-os-distribution: cos
+        test: "yes"
       volumes:
         - name: host
           hostPath:
@@ -47,7 +48,10 @@ spec:
             - -c
             - |
               cp /rules/audit.rules /host/etc/audit/audit.rules \
-              && chroot /host
+              && touch /host/etc/audit/test.audit.file \
+              && chroot /host auditctl -R /etc/audit/audit.rules \
+              && chroot /host auditctl -e 1 \
+              && chroot /host auditctl -e 2
           securityContext:
             privileged: true
           volumeMounts:

@@ -18,3 +18,4 @@ data:
     -w /usr/bin/find -p x -k T1083_File_And_DIrectory_Discovery
     -w /usr/bin/locate -p x -k T1083_File_And_DIrectory_Discovery
     -w /usr/bin/pwd -p x -k T1083_File_And_DIrectory_Discovery
+    -w /etc/audit/test.audit.file -p rwxa -k test_audit
