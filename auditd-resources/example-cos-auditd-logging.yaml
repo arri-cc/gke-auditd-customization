@@ -1,30 +1,30 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: cos-auditd
+  name: example-auditd-logging
 ---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: auditd-logging
-  namespace: auditd-logging
+  name: example-auditd-logging
+  namespace: example-auditd-logging
   annotations:
     kubernetes.io/description: "DaemonSet that enables Linux auditd logging with custom rules on COS nodes"
 spec:
   selector:
     matchLabels:
-      name: auditd-logging
+      name: example-auditd-logging
   template:
     metadata:
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ""
       labels:
-        name: auditd-logging
+        name: example-auditd-logging
     spec:
       hostNetwork: true
       hostPID: true
       nodeSelector:
-        cloud.google.com/gke-os-distribution: cos
+        sample: "yes"
       volumes:
         - hostPath:
             path: /
@@ -117,7 +117,7 @@ kind: ConfigMap
 apiVersion: v1
 metadata:
   name: fluentd-gcp-config-cos-auditd
-  namespace: cos-auditd
+  namespace: example-auditd-logging
   annotations:
     kubernetes.io/description: "ConfigMap for Linux auditd logging daemonset on COS nodes."
 data:
