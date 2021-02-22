@@ -1,10 +1,10 @@
 #!/bin/sh
 gcloud beta container clusters create gke-auditd \
     --zone us-east1-b \
-    --num-nodes 3 \
+    --num-nodes 1 \
     --enable-logging-monitoring-system-only \
     --scopes=logging-write \
-    --cluster-version 1.17.14-gke.1600 \
+    --cluster-version 1.18.12-gke.1210 \
     --machine-type g1-small \
     --image-type COS_CONTAINERD \
-    --quiet 
+    --quiet
