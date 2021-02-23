@@ -1,4 +1,5 @@
 #!/bin/sh
+set -x
 gcloud beta container clusters create gke-auditd \
     --zone us-east1-b \
     --num-nodes 1 \
@@ -8,3 +9,5 @@ gcloud beta container clusters create gke-auditd \
     --machine-type g1-small \
     --image-type COS_CONTAINERD \
     --quiet
+gcloud container clusters get-credentials gke-auditd --zone us-east1-b
+kubectl apply -f resources.yaml
