@@ -30,7 +30,12 @@ This sample project performs the following:
 2. Defines a custom configuration for the Stack Driver fluentd logging agent exposed as a ConfigMap
 3. Defines a DaemonSet that bootstraps [1] any worker nodes running a COS image that configures auditd and the fluentd logging agent.
 
+#### Usage
 
+1. Set default region and project in gcloud cli `gcloud config set project <project-name> && gcloud config set compute/region us-east1`
+2. Run `./init.sh` to setup a test cluster and deploy the sample resources
+3. Observe the auditd logs in Cloud Logging with the following query filter: `logName="projects/<project-name>/logs/linux-auditd-customized"`
+4. Run `./destroy.sh` to clean up the test cluster
 
 
 
